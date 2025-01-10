@@ -1,0 +1,35 @@
+[
+  {
+    "id": 1,
+    "name": "BLAST Premier Spring Finals 2023",
+    "client": "BLAST",
+    "game": "CS:GO",
+    "startDate": "2023-06-15",
+    "endDate": "2023-06-18",
+    "numberOfDays": 4,
+    "city": "Washington D.C.",
+    "country": "USA",
+    "rate": 500,
+    "budgeted": 10000,
+    "vat": 2100,
+    "finalPaidAmount": 12100,
+    "observations": "Primeiro evento nos EUA"
+  },
+  {
+    "id": 2,
+    "name": "ESL Pro League Season 17",
+    "client": "ESL",
+    "game": "CS:GO",
+    "startDate": "2023-02-22",
+    "endDate": "2023-03-26",
+    "numberOfDays": 33,
+    "city": "Malta",
+    "country": "Malta",
+    "rate": 450,
+    "budgeted": 14850,
+    "vat": 3118.5,
+    "finalPaidAmount": 17968.5,
+    "observations": "Evento de longa duração"
+  }
+]
+
