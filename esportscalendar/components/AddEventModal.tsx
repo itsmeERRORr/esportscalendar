@@ -15,21 +15,21 @@ import { motion } from 'framer-motion'
 import { CalendarIcon, DollarSignIcon, MapPinIcon, BriefcaseIcon, FlagIcon } from 'lucide-react'
 
 const scrollbarStyles = `
-  .modern-scrollbar::-webkit-scrollbar {
-    width: 6px;
-  }
-  .modern-scrollbar::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-  }
-  .modern-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.3);
-    border-radius: 3px;
-    transition: background-color 0.2s ease;
-  }
-  .modern-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255, 255, 255, 0.5);
-  }
+.modern-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.modern-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+.modern-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+.modern-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+}
 `;
 
 interface AddEventModalProps {
@@ -40,7 +40,7 @@ interface AddEventModalProps {
 
 export function AddEventModal({ isOpen, onClose, onAddEvent }: AddEventModalProps) {
   const { user } = useAuth()
-  const [formData, setFormData] = useState<Omit<Event, 'id'>>({
+  const [formData, setFormData] = useState<Omit<Event, 'id'> & { manualBudgeted: boolean }>({
     userId: user?.id || 0,
     name: '',
     client: '',
@@ -61,45 +61,76 @@ export function AddEventModal({ isOpen, onClose, onAddEvent }: AddEventModalProp
     currency: '€',
     conver: 0,
     totalp: 0,
+    manualBudgeted: false,
   })
-
-  const resetForm = () => {
-    setFormData({
-      userId: user?.id || 0,
-      name: '',
-      client: '',
-      game: '',
-      startDate: '',
-      endDate: '',
-      numberOfDays: 0,
-      city: '',
-      country: '',
-      rate: 0,
-      travelRate: 0,
-      budgeted: 0,
-      finalPaidAmount: 0,
-      observations: '',
-      status: 'Nothing',
-      invoice: false,
-      receipt: false,
-      currency: '€',
-      conver: 0,
-      totalp: 0,
-    });
-  };
+  const [exchangeRates, setExchangeRates] = useState<{ [key: string]: number }>({})
+  const [totalInEuros, setTotalInEuros] = useState<number>(0)
 
   useEffect(() => {
-    if (isOpen) {
-      resetForm();
+    const fetchRates = async () => {
+      try {
+        const response = await fetch('https://api.fxratesapi.com/latest?base=EUR&currencies=USD,GBP,JPY,SEK,PLN&resolution=1m&amount=1&places=6&format=json')
+        const data = await response.json()
+        if (data && data.rates) {
+          setExchangeRates(data.rates)
+        }
+      } catch (error) {
+        console.error('Error fetching exchange rates:', error)
+      }
     }
-  }, [isOpen]);
+    fetchRates()
+  }, [])
+
+  useEffect(() => {
+    if (!formData.manualBudgeted) {
+      const calculateFinalQuote = () => {
+        const travelCost = formData.travelRate * 2;
+        const numberOfDays = calculateNumberOfDays(formData.startDate, formData.endDate);
+        const workCost = formData.rate * numberOfDays;
+        return travelCost + workCost;
+      };
+
+      const newFinalQuote = calculateFinalQuote();
+      setFormData(prev => ({ ...prev, budgeted: newFinalQuote }));
+    }
+  }, [formData.travelRate, formData.rate, formData.startDate, formData.endDate, formData.manualBudgeted]);
+
+  useEffect(() => {
+    const convertToEuros = (amount: number, fromCurrency: string) => {
+      if (fromCurrency === '€' || fromCurrency === 'EUR') return amount
+      const rate = exchangeRates[fromCurrency] || 1
+      return amount / rate
+    }
+
+    const newTotalInEuros = convertToEuros(formData.budgeted, formData.currency)
+    setTotalInEuros(newTotalInEuros)
+    setFormData(prev => ({ 
+      ...prev, 
+      conver: Number(newTotalInEuros.toFixed(2)),
+      totalp: Number(newTotalInEuros.toFixed(2)) 
+    }))
+  }, [formData.budgeted, formData.currency, exchangeRates])
+
+  const calculateNumberOfDays = (startDate: string, endDate: string) => {
+    if (!startDate || !endDate) return 0;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Add 1 to include both start and end days
+    return diffDays;
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    if (name === 'rate' || name === 'travelRate' || name === 'budgeted') {
-      setFormData(prev => ({ ...prev, [name]: value === '' ? 0 : Number(value) }));
+    if (name === 'travelRate' || name === 'rate') {
+      setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0, manualBudgeted: false }))
+    } else if (name === 'startDate' || name === 'endDate') {
+      setFormData(prev => ({ ...prev, [name]: value, manualBudgeted: false }))
+    } else if (name === 'budgeted') {
+      const budgetedValue = parseFloat(value) || 0;
+      setFormData(prev => ({ ...prev, budgeted: budgetedValue, manualBudgeted: true }))
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData(prev => ({ ...prev, [name]: value }))
     }
   }
 
@@ -112,15 +143,14 @@ export function AddEventModal({ isOpen, onClose, onAddEvent }: AddEventModalProp
   }
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     onAddEvent({
       ...formData,
       id: Date.now(),
       userId: user?.id || 0,
-    } as Event);
-    resetForm();
-    onClose();
-  };
+    } as Event)
+    onClose()
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -236,19 +266,42 @@ export function AddEventModal({ isOpen, onClose, onAddEvent }: AddEventModalProp
               <Label htmlFor="travelRate" className="text-sm font-semibold flex items-center">
                 <DollarSignIcon className="w-4 h-4 mr-1" /> Travel Rate
               </Label>
-              <Input id="travelRate" name="travelRate" type="number" value={formData.travelRate} onChange={handleChange} required className="bg-gray-700 text-gray-100 border-gray-600 h-8 text-sm" />
+              <Input 
+                id="travelRate" 
+                name="travelRate" 
+                type="number" 
+                value={formData.travelRate} 
+                onChange={handleChange} 
+                required 
+                className="bg-gray-700 text-gray-100 border-gray-600 h-8 text-sm" 
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="rate" className="text-sm font-semibold flex items-center">
                 <BriefcaseIcon className="w-4 h-4 mr-1" /> Work Rate
               </Label>
-              <Input id="rate" name="rate" type="number" value={formData.rate} onChange={handleChange} required className="bg-gray-700 text-gray-100 border-gray-600 h-8 text-sm" />
+              <Input 
+                id="rate" 
+                name="rate" 
+                type="number" 
+                value={formData.rate} 
+                onChange={handleChange} 
+                required 
+                className="bg-gray-700 text-gray-100 border-gray-600 h-8 text-sm" 
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="budgeted" className="text-sm font-semibold">Final Quote</Label>
-              <Input id="budgeted" name="budgeted" type="number" value={formData.budgeted} onChange={handleChange} className="bg-gray-700 text-gray-100 border-gray-600 h-8 text-sm" />
+              <Input 
+                id="budgeted" 
+                name="budgeted" 
+                type="number" 
+                value={formData.budgeted} 
+                onChange={handleChange}
+                className="bg-gray-700 text-gray-100 border-gray-600 h-8 text-sm" 
+              />
             </div>
 
             <div className="space-y-2">
@@ -260,8 +313,9 @@ export function AddEventModal({ isOpen, onClose, onAddEvent }: AddEventModalProp
                 <SelectContent>
                   <SelectItem value="EUR">€ (EUR)</SelectItem>
                   <SelectItem value="USD">$ (USD)</SelectItem>
-                  <SelectItem value="SEK">SEK</SelectItem>
-                  <SelectItem value="PLN">PLN</SelectItem>
+                  {['SEK', 'PLN'].map(rate => (
+                    <SelectItem key={rate} value={rate}>{rate}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

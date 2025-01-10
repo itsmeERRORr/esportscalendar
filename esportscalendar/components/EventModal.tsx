@@ -41,12 +41,13 @@ interface EventModalProps {
 }
 
 export function EventModal({ event, isOpen, onClose, onUpdate, onDelete }: EventModalProps) {
-  const [formData, setFormData] = useState<Event>({
+  const [formData, setFormData] = useState<Event & { manualBudgeted: number | null }>({
     ...event,
     finalPaidAmount: event.finalPaidAmount ?? null,
     travelRate: event.travelRate ?? 0,
     conver: event.conver || 0,
     totalp: event.totalp || 0,
+    manualBudgeted: null,
   })
   const [currency, setCurrency] = useState(event.currency || '€')
   const [totalInEuros, setTotalInEuros] = useState<number>(0)
@@ -93,10 +94,37 @@ export function EventModal({ event, isOpen, onClose, onUpdate, onDelete }: Event
     }))
   }, [formData.budgeted, formData.finalPaidAmount, currency, exchangeRates])
 
+  useEffect(() => {
+    const calculateFinalQuote = () => {
+      const travelCost = formData.travelRate * 2;
+      const numberOfDays = calculateNumberOfDays(formData.startDate, formData.endDate);
+      const workCost = formData.rate * numberOfDays;
+      return travelCost + workCost;
+    };
+
+    const newFinalQuote = calculateFinalQuote();
+    if (formData.manualBudgeted === null) {
+      setFormData(prev => ({ ...prev, budgeted: newFinalQuote }));
+    }
+  }, [formData.travelRate, formData.rate, formData.startDate, formData.endDate, formData.manualBudgeted]);
+
+  const calculateNumberOfDays = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Add 1 to include both start and end days
+    return diffDays;
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    if (name === 'conver' || name === 'totalp') {
-      setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0 }))
+    if (name === 'travelRate' || name === 'rate') {
+      setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0, manualBudgeted: null }))
+    } else if (name === 'startDate' || name === 'endDate') {
+      setFormData(prev => ({ ...prev, [name]: value, manualBudgeted: null }))
+    } else if (name === 'budgeted') {
+      const budgetedValue = parseFloat(value) || 0;
+      setFormData(prev => ({ ...prev, budgeted: budgetedValue, manualBudgeted: budgetedValue }))
     } else if (name === 'finalPaidAmount') {
       setFormData(prev => ({ ...prev, [name]: value === '' ? null : parseFloat(value) }))
     } else {
@@ -278,19 +306,42 @@ export function EventModal({ event, isOpen, onClose, onUpdate, onDelete }: Event
               <Label htmlFor="travelRate" className="text-sm font-semibold flex items-center">
                 <DollarSignIcon className="w-4 h-4 mr-1" /> Travel Rate
               </Label>
-              <Input id="travelRate" name="travelRate" type="number" value={formData.travelRate} onChange={handleChange} required className="bg-gray-700 text-gray-100 border-gray-600 h-8 text-sm" />
+              <Input 
+                id="travelRate" 
+                name="travelRate" 
+                type="number" 
+                value={formData.travelRate} 
+                onChange={handleChange} 
+                required 
+                className="bg-gray-700 text-gray-100 border-gray-600 h-8 text-sm" 
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="rate" className="text-sm font-semibold flex items-center">
                 <BriefcaseIcon className="w-4 h-4 mr-1" /> Work Rate
               </Label>
-              <Input id="rate" name="rate" type="number" value={formData.rate} onChange={handleChange} required className="bg-gray-700 text-gray-100 border-gray-600 h-8 text-sm" />
+              <Input 
+                id="rate" 
+                name="rate" 
+                type="number" 
+                value={formData.rate} 
+                onChange={handleChange} 
+                required 
+                className="bg-gray-700 text-gray-100 border-gray-600 h-8 text-sm" 
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="budgeted" className="text-sm font-semibold">Final Quote</Label>
-              <Input id="budgeted" name="budgeted" type="number" value={formData.budgeted} onChange={handleChange} className="bg-gray-700 text-gray-100 border-gray-600 h-8 text-sm" />
+              <Input 
+                id="budgeted" 
+                name="budgeted" 
+                type="number" 
+                value={formData.budgeted} 
+                onChange={handleChange}
+                className="bg-gray-700 text-gray-100 border-gray-600 h-8 text-sm" 
+              />
             </div>
 
             <div className="space-y-2">

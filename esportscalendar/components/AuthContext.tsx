@@ -46,13 +46,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         (lowercaseEmail === 'adelasznajder@gmail.com' && lowercaseUsername === 'adela' && password === 'adel4adel4') ||
         (lowercaseEmail === 'photos.lucbouchon@gmail.com' && lowercaseUsername === 'luc' && password === 'luclucc') ||
         (lowercaseEmail === 'vexanie@gmail.com' && lowercaseUsername === 'steph' && password === 'vexv3x') ||
-        (lowercaseEmail === 'guedesnoob@noob.com' && lowercaseUsername === 'guedes' && password === 'guedesguedes')) {
+        (lowercaseEmail === 'guedesnoob@noob.com' && lowercaseUsername === 'guedes' && password === 'guedesguedes') ||
+        (lowercaseEmail === 'gilbertoravenvieira@gmail.com' && lowercaseUsername === 'gil' && password === 'gilg1l') ||
+        (lowercaseEmail === 'joaolaiafirmo@gmail.com' && lowercaseUsername === 'firmo' && password === 'firmof1rm0')) {
       console.log('Login successful for', username);
       const userData = {
         id: lowercaseEmail === 'ferreyrajoao@gmail.com' ? 1 : 
             lowercaseEmail === 'adelasznajder@gmail.com' ? 2 : 
             lowercaseEmail === 'photos.lucbouchon@gmail.com' ? 3 : 
-            lowercaseEmail === 'vexanie@gmail.com' ? 4 : 5,
+            lowercaseEmail === 'vexanie@gmail.com' ? 4 : 
+            lowercaseEmail === 'gilbertoravenvieira@gmail.com' ? 5 : 
+            lowercaseEmail === 'joaolaiafirmo@gmail.com' ? 6 : 7,
         email: lowercaseEmail,
         username: lowercaseUsername
       };

@@ -13,6 +13,7 @@ import { Event } from '../types/event'
 import { MonthlyRevenueChart } from '@/components/MonthlyRevenueChart'
 import PendingPaymentsTable from '@/components/PendingPaymentsTable'
 import PaidEventsTable from '@/components/PaidEventsTable'
+import { X, Instagram } from 'lucide-react'
 
 const months = [
   'January', 'February', 'March', 'April',
@@ -193,6 +194,7 @@ export default function Home() {
   const pendingPayments = events.filter(event => event.status === 'Unpaid').reduce((sum, event) => sum + event.budgeted, 0);
   const totalPaid = events.filter(event => event.status === 'Paid').reduce((sum, event) => sum + (event.totalp || 0), 0);
   const monthlyAverage = events.length > 0 ? totalPaid / 12 : 0;
+  const incomingAmount = events.filter(event => event.status === 'Confirmed').reduce((sum, event) => sum + (event.totalp || 0), 0);
 
   const getCategoryButtonClass = (status: EventStatus) => {
     switch (status) {
@@ -220,7 +222,7 @@ export default function Home() {
     <div className="min-h-screen animated-gradient text-gray-100 relative overflow-hidden">
       <div className="absolute inset-0 bg-black bg-opacity-30"></div>
       <div className="relative z-10">
-        <div className="container mx-auto p-4 md:p-6 lg:p-8">
+        <div className="container mx-auto p-4 md:p-6 lg:p-8 pb-16">
           <header className="mb-8">
             <div className="flex justify-between items-center">
               <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
@@ -298,7 +300,13 @@ export default function Home() {
                 <CardTitle className="z-0 text-xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">Business Overview</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  <div className="p-4 bg-gray-700 bg-opacity-50 rounded-lg">
+                    <h3 className="text-lg font-semibold mb-2 text-yellow-400">Incoming</h3>
+                    <p className="text-2xl font-bold text-yellow-400">
+                      €{incomingAmount.toFixed(2)}
+                    </p>
+                  </div>
                   <div className="p-4 bg-gray-700 bg-opacity-50 rounded-lg">
                     <h3 className="text-lg font-semibold mb-2 text-red-400">Pending Payments</h3>
                     <p className="text-2xl font-bold text-red-400">
@@ -327,6 +335,29 @@ export default function Home() {
                 </div>
               </CardContent>
             </Card>
+            <footer className="mt-8 py-4 text-center text-sm text-gray-400">
+              <div className="space-y-2">
+                <div>by João Ferreira &copy; 2025 - in early beta</div>
+                <div className="flex justify-center gap-4">
+                  <a 
+                    href="https://x.com/itsmeERRor" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="hover:text-gray-300 transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </a>
+                  <a 
+                    href="https://instagram.com/joaoferreira.photography" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="hover:text-gray-300 transition-colors"
+                  >
+                    <Instagram className="h-5 w-5" />
+                  </a>
+                </div>
+              </div>
+            </footer>
           </div>
           <AddEventModal
             isOpen={showAddModal}
