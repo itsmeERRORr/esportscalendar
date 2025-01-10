@@ -8,7 +8,6 @@ interface User {
   id: number
   email: string
   username: string
-  role: 'admin' | 'user'
 }
 
 interface AuthContextType {
@@ -42,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('Login attempt:', { email, username, environment: process.env.NODE_ENV })
     const lowercaseEmail = email.toLowerCase();
     const lowercaseUsername = username.toLowerCase();
+    // Using the specific credentials provided
     if ((lowercaseEmail === 'ferreyrajoao@gmail.com' && lowercaseUsername === 'joao' && password === 'joaojoao') ||
         (lowercaseEmail === 'adelasznajder@gmail.com' && lowercaseUsername === 'adela' && password === 'adel4adel4') ||
         (lowercaseEmail === 'photos.lucbouchon@gmail.com' && lowercaseUsername === 'luc' && password === 'luclucc') ||
@@ -54,8 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             lowercaseEmail === 'photos.lucbouchon@gmail.com' ? 3 : 
             lowercaseEmail === 'vexanie@gmail.com' ? 4 : 5,
         email: lowercaseEmail,
-        username: lowercaseUsername,
-        role: lowercaseEmail === 'ferreyrajoao@gmail.com' ? 'admin' : 'user'
+        username: lowercaseUsername
       };
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
